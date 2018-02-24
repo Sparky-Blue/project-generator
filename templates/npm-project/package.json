@@ -31,11 +31,6 @@
   },
   "dependencies": {
     "async": "^2.6.0",
-    "fs": "0.0.1-security",
-    "inquirer": "^5.1.0"
-  },
-  "bin": {
-    "generate": "./index.js"
-  },
-  "private": true
+    "fs": "0.0.1-security"
+  }
 }
