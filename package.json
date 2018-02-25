@@ -1,8 +1,7 @@
 {
   "name": "core-ft-async-awareness",
   "version": "1.0.0",
-  "description":
-    "Async callbacks is the very basics of understanding how to use asyncronous code in JavaScript",
+  "description": "Async callbacks is the very basics of understanding how to use asyncronous code in JavaScript",
   "main": "main.js",
   "scripts": {
     "test-utils": "mocha ./spec/utils.spec.js",

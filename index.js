@@ -43,10 +43,6 @@ const QUESTIONS = [
   }
 ];
 
-inquirer.prompt(QUESTIONS).then(answers => {
-  console.log(answers);
-});
-
 //const CURR_DIR = process.cwd();
 
 inquirer.prompt(QUESTIONS).then(answers => {
@@ -57,100 +53,88 @@ inquirer.prompt(QUESTIONS).then(answers => {
 
   //fs.mkdirSync(`${CURR_DIR}/${projectName}`);
 
-  generator(/*templatePath,*/ projectName, gitRemote, callBack);
+  generator(/*templatePath,*/ projectName, gitRemote);
 });
 
-function generator(/*path,*/ name = "new_project", gitRemote, cb) {
-  makeDir(name, createProjectFolder);
-  child_process.exec("git init", { cwd: `./${name}` }, err => {
-    if (err) console.log(err);
-    else {
-      console.log("git init complete");
-    }
-  });
-  child_process.exec("npm init -y", { cwd: `./${name}` }, err => {
-    if (err) console.log(err);
-    else {
-      console.log("npm init complete");
-    }
-  });
-  child_process.exec("npm i chai mocha -D", { cwd: `./${name}` }, err => {
-    if (err) console.log(err);
-    else {
-      console.log("npm installed");
-    }
-  });
-  if (gitRemote) {
-    child_process.exec(
-      `git remote add origin ${gitRemote}`,
-      { cwd: `./${name}` },
-      err => {
-        if (err) console.log(err);
-        else {
-          console.log(`git remote added: ${gitRemote}`);
-        }
-      }
-    );
-    child_process.exec(`git add .`, { cwd: `./${name}` }, err => {
-      if (err) console.log(err);
-      else {
-        console.log(`git add complete for all files`);
-      }
-    });
-    child_process.exec(
-      `git commit -m 'initial project setup'`,
-      { cwd: `./${name}` },
-      err => {
-        if (err) console.log(err);
-        else {
-          console.log(`git commit - initial project set up`);
-        }
-      }
-    );
-    child_process.exec(`git push origin master`, { cwd: `./${name}` }, err => {
-      if (err) console.log(err);
-      else {
-        console.log(`complete git push`);
-      }
-    });
-  }
-  cb(null, name);
+function generator(/*path,*/ name = "new_project", gitRemote) {
+  makeDir(name, gitRemote, createProjectFolder);
+  // inits(name, initComplete);
+  // gitRemoteSetup(name, gitRemote);
 }
 
-function createProjectFolder(err, data) {
-  if (err) console.log("Create ProjectFolder error: " + err);
-  else {
-    makeDir(`${data}/spec`, callBack);
-    makeFile(`./${data}/index.js`, "module.exports = {};", callBack);
-    makeFile(
-      `./${data}/spec/index.spec.js`,
-      "const {expect} = require('chai');",
-      callBack
-    );
-    makeFile(`./${data}/README.md`, "Read me...", callBack);
-    makeFile(`./${data}/package.json`, jsonData, callBack);
-    makeFile(`./${data}/.gitignore`, gitIgnoreData, callBack);
-    makeFile(`./${data}/.eslintrc`, eslintData, callBack);
-  }
-}
-
-function makeDir(path, cb) {
+function makeDir(path, gitRemote, cb) {
   fs.mkdir(path, err => {
     if (err) console.log("makeDir error" + err + path);
-    cb(null, path);
+    cb(null, path, gitRemote);
   });
 }
 
-function makeFile(name, data, cb) {
+function createProjectFolder(err, data, gitRemote) {
+  if (err) console.log("Create ProjectFolder error: " + err);
+  else {
+    // const callGit = gitRemoteSetup(data, gitRemote, callBack);
+    const callInit = inits(null, data, gitRemote, gitRemoteSetup);
+
+    const lint = makeFile(`./${data}/.eslintrc`, eslintData, callInit);
+    const gitIgnore = makeFile(`./${data}/.gitignore`, gitIgnoreData, lint);
+    const pJSON = makeFile(`./${data}/package.json`, jsonData, gitIgnore);
+    const ReadMe = makeFile(`./${data}/README.md`, "Read me...", pJSON);
+    const indexFile = makeFile(
+      `./${data}/index.js`,
+      "module.exports = {};",
+      ReadMe
+    );
+
+    makeDir(`${data}/spec`, gitRemote, (err, data) => {
+      if (err) console.log(err);
+      else {
+        makeFile(
+          `./${data}/index.spec.js`,
+          "const {expect} = require('chai');",
+          indexFile
+        );
+      }
+    });
+  }
+}
+
+function makeFile(name, data) {
   fs.writeFile(name, data, "utf8", err => {
     if (err) console.log("writeFile error" + err);
-    cb(null, name);
   });
 }
 
-function gitInit() {}
+function inits(err, name, gitRemote, cb) {
+  if (err) console.log(err);
+  else {
+    child_process.exec(
+      "npm init -y && npm i chai mocha -D",
+      { cwd: `./${name}` },
+      err => {
+        if (err) console.log(err);
+        else {
+          console.log("npm init complete");
+        }
+      }
+    );
+    if (gitRemote) cb(name, gitRemote);
+  }
+}
 
-function npmInstall() {}
+function gitRemoteSetup(name, gitRemote) {
+  child_process.exec(
+    `git init && git remote add origin ${gitRemote} && git add . && git commit -m 'initial project setup' && git push origin master`,
+    { cwd: `./${name}` },
+    err => {
+      if (err) console.log(err);
+      else {
+        console.log(
+          `git remote added: ${gitRemote} and setup pushed to origin master`
+        );
+      }
+    }
+  );
+}
 
 function callBack(err, data) {
   if (err) console.log("error: " + err);
