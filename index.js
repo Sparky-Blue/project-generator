@@ -1,23 +1,24 @@
 #!/usr/bin/env node
 
 const fs = require("fs");
-const { eslintData, jsonData, gitIgnoreData } = require("./data");
+const {
+  eslintData,
+  jsonData,
+  gitIgnoreData,
+  cssNormalizeData
+} = require("./data");
 const inquirer = require("inquirer");
 const child_process = require("child_process");
 
-// const CHOICES = fs.readdir(
-//   `generator/templates`,
-//   "utf8",
-//   callBack(null, `generator/templates`)
-// );
+const projectTypes = ["NPM_Project", "HTML_Project"];
 
 const QUESTIONS = [
-  // {
-  //   name: "project-choice",
-  //   type: "list",
-  //   message: "What project template would you like to generate?",
-  //   choices: CHOICES
-  // },
+  {
+    name: "project-choice",
+    type: "list",
+    message: "What project template would you like to generate?",
+    choices: projectTypes
+  },
   {
     name: "project-name",
     type: "input",
@@ -46,61 +47,109 @@ const QUESTIONS = [
 //const CURR_DIR = process.cwd();
 
 inquirer.prompt(QUESTIONS).then(answers => {
-  // const projectChoice = answers["project-choice"];
+  const projectChoice = answers["project-choice"];
   const projectName = answers["project-name"];
   const gitRemote = answers["gitHub-remote"];
   // const templatePath = `${__dirname}/templates/${projectChoice}`;
 
   //fs.mkdirSync(`${CURR_DIR}/${projectName}`);
 
-  generator(/*templatePath,*/ projectName, gitRemote);
+  generator(projectChoice, projectName, gitRemote);
 });
 
-function generator(/*path,*/ name = "new_project", gitRemote) {
-  makeDir(name, gitRemote, createProjectFolder);
-  // inits(name, initComplete);
-  // gitRemoteSetup(name, gitRemote);
+function generator(projectChoice, name = "new_project", gitRemote) {
+  let arrayOfFiles = [];
+  if (projectChoice === "NPM_Project")
+    arrayOfFiles = [
+      { name: "lint", path: `./${name}/.eslintrc`, data: eslintData },
+      { name: "gitIgnore", path: `./${name}/.gitignore`, data: gitIgnoreData },
+      { name: "pJSON", path: `./${name}/package.json`, data: jsonData },
+      { name: "ReadMe", path: `./${name}/README.md`, data: "Read me..." },
+      {
+        name: "indexFile",
+        path: `./${name}/index.js`,
+        data: "module.exports = {};"
+      }
+    ];
+  else if (projectChoice === "HTML_Project")
+    arrayOfFiles = [
+      { name: "lint", path: `./${name}/.eslintrc`, data: eslintData },
+      { name: "gitIgnore", path: `./${name}/.gitignore`, data: gitIgnoreData },
+      { name: "ReadMe", path: `./${name}/README.md`, data: "Read me..." },
+      {
+        name: "index.html",
+        path: `./${name}/index.html`,
+        data: " "
+      },
+      { name: "css", path: `./${name}/css/main.css`, data: " " },
+      {
+        name: "normCSS",
+        path: `./${name}/css/normalize.css`,
+        data: cssNormalizeData
+      },
+      { name: "index.js", path: `./${name}/js/index.js`, data: " " }
+    ];
+  makeDir(name, gitRemote, arrayOfFiles, projectChoice, createProjectFolder);
 }
 
-function makeDir(path, gitRemote, cb) {
+function makeDir(path, gitRemote, array, projectChoice, cb) {
   fs.mkdir(path, err => {
     if (err) console.log("makeDir error" + err + path);
-    cb(null, path, gitRemote);
+    cb(null, path, gitRemote, array, projectChoice);
   });
 }
 
-function createProjectFolder(err, data, gitRemote) {
+function createProjectFolder(err, data, gitRemote, array, projectChoice) {
+  let fileCount = 0;
   if (err) console.log("Create ProjectFolder error: " + err);
   else {
-    // const callGit = gitRemoteSetup(data, gitRemote, callBack);
-    const callInit = inits(null, data, gitRemote, gitRemoteSetup);
-
-    const lint = makeFile(`./${data}/.eslintrc`, eslintData, callInit);
-    const gitIgnore = makeFile(`./${data}/.gitignore`, gitIgnoreData, lint);
-    const pJSON = makeFile(`./${data}/package.json`, jsonData, gitIgnore);
-    const ReadMe = makeFile(`./${data}/README.md`, "Read me...", pJSON);
-    const indexFile = makeFile(
-      `./${data}/index.js`,
-      "module.exports = {};",
-      ReadMe
-    );
-
-    makeDir(`${data}/spec`, gitRemote, (err, data) => {
-      if (err) console.log(err);
-      else {
-        makeFile(
-          `./${data}/index.spec.js`,
-          "const {expect} = require('chai');",
-          indexFile
-        );
+    if (projectChoice === "NPM_Project") {
+      makeDir(`${data}/spec`, gitRemote, array, null, (err, data) => {
+        if (err) console.log(err);
+        else {
+          makeFile(
+            `./${data}/index.spec.js`,
+            "const {expect} = require('chai');",
+            callBack
+          );
+        }
+      });
+    } else if (projectChoice === "HTML_Project") {
+      makeDir(`${data}/css`, gitRemote, array, null, (err, data) => {
+        if (err) console.log(err);
+        else {
+          console.log("complete css/");
+        }
+      });
+      makeDir(`${data}/images`, gitRemote, array, null, (err, data) => {
+        if (err) console.log(err);
+        else {
+          console.log("complete images/");
+        }
+      });
+      makeDir(`${data}/js`, gitRemote, array, null, (err, data) => {
+        if (err) console.log(err);
+        else {
+          console.log("complete js/");
+        }
+      });
+    }
+    array.forEach(file => {
+      makeFile(file.path, file.data, callBack);
+      fileCount++;
+      if (fileCount === array.length) {
+        if (projectChoice === "NPM_Project") {
+          inits(null, data, gitRemote, gitRemoteSetup);
+        }
       }
     });
   }
 }
 
-function makeFile(name, data) {
+function makeFile(name, data, cb) {
   fs.writeFile(name, data, "utf8", err => {
     if (err) console.log("writeFile error" + err);
+    else cb(null, name);
   });
 }
 
@@ -140,7 +189,5 @@ function callBack(err, data) {
   if (err) console.log("error: " + err);
   console.log(`created : ${data}`);
 }
-
-//generate("new_project", callBack);
 
 module.exports = { makeDir, createProjectFolder };
