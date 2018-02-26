@@ -44,16 +44,10 @@ const QUESTIONS = [
   }
 ];
 
-//const CURR_DIR = process.cwd();
-
 inquirer.prompt(QUESTIONS).then(answers => {
   const projectChoice = answers["project-choice"];
   const projectName = answers["project-name"];
   const gitRemote = answers["gitHub-remote"];
-  // const templatePath = `${__dirname}/templates/${projectChoice}`;
-
-  //fs.mkdirSync(`${CURR_DIR}/${projectName}`);
-
   generator(projectChoice, projectName, gitRemote);
 });
 
@@ -115,19 +109,19 @@ function createProjectFolder(err, data, gitRemote, array, projectChoice) {
         }
       });
     } else if (projectChoice === "HTML_Project") {
-      makeDir(`${data}/css`, gitRemote, array, null, (err, data) => {
+      makeDir(`${data}/css`, gitRemote, array, null, err => {
         if (err) console.log(err);
         else {
-          console.log("complete css/");
+          console.log("complete css");
         }
       });
-      makeDir(`${data}/images`, gitRemote, array, null, (err, data) => {
+      makeDir(`${data}/images`, gitRemote, array, null, err => {
         if (err) console.log(err);
         else {
           console.log("complete images/");
         }
       });
-      makeDir(`${data}/js`, gitRemote, array, null, (err, data) => {
+      makeDir(`${data}/js`, gitRemote, array, null, err => {
         if (err) console.log(err);
         else {
           console.log("complete js/");
@@ -140,6 +134,8 @@ function createProjectFolder(err, data, gitRemote, array, projectChoice) {
       if (fileCount === array.length) {
         if (projectChoice === "NPM_Project") {
           inits(null, data, gitRemote, gitRemoteSetup);
+        } else if (gitRemote) {
+          gitRemoteSetup(data, gitRemote);
         }
       }
     });
