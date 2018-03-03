@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 
-const {
-  filesHTML,
-  filesNPM,
-  filesServer,
-  HTMLdirs,
-  NPMDirs,
-  serverDirs
-} = require("./data");
+const { filesHTML, HTMLdirs } = require("./data/HTML");
+const { filesNPM, NPMDirs, commandsNPM } = require("./data/NPM");
+const { serverDirs, filesServer, commandsServer } = require("./data/Server");
 const {
   createDirectories,
   createFiles,
@@ -16,7 +11,7 @@ const {
 } = require("./utils/utils");
 const inquirer = require("inquirer");
 
-const projectTypes = ["NPM_Project", "HTML_Project"];
+const projectTypes = ["NPM_Project", "HTML_Project", "Dev_Server_Project"];
 
 const QUESTIONS = [
   {
@@ -60,15 +55,18 @@ inquirer.prompt(QUESTIONS).then(answers => {
 function generator(projectChoice, name = "new_project", gitRemote) {
   let filesList = [];
   let directoryList = [];
+  let commands;
   if (projectChoice === "NPM_Project") {
     filesList = filesNPM;
     directoryList = NPMDirs;
+    commands = commandsNPM;
   } else if (projectChoice === "HTML_Project") {
     filesList = filesHTML;
     directoryList = HTMLdirs;
-  } else if (projectChoice === "Server_Project") {
+  } else if (projectChoice === "Dev_Server_Project") {
     filesList = filesServer;
     directoryList = serverDirs;
+    commands = commandsServer;
   }
   createDirectories(name)
     .then(() => {
@@ -78,7 +76,7 @@ function generator(projectChoice, name = "new_project", gitRemote) {
       return createFiles(name, filesList);
     })
     .then(() => {
-      if (projectChoice === "HTML_Project") return inits(name);
+      if (commands) return inits(name, commands);
     })
     .then(() => {
       if (gitRemote) return gitRemoteSetup(name, gitRemote);

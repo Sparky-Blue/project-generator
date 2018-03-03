@@ -3,8 +3,6 @@ const fs = Promise.promisifyAll(require("fs"));
 const CURR_DIR = process.cwd();
 const child_process = require("child_process");
 
-const path = require("path");
-
 function createDirectories(name, directoryList = [""]) {
   const directoryCreate = directoryList.map(directory => {
     return fs.mkdirAsync(`${name}/${directory}`);
@@ -19,8 +17,8 @@ function createFiles(name, fileList) {
   return Promise.all(fileCreate);
 }
 
-function inits(name) {
-  child_process.exec("npm init -y && npm i chai mocha -D", {
+function inits(name, command) {
+  child_process.exec(command, {
     cwd: `./${name}`
   });
 }
